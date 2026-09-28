@@ -4,7 +4,13 @@ config.py
 # Don't need to track raw downloaded data in git (it can get large)
 data/raw/*.json
 
+
+# Generate database file ( we can rebuild it from the raw data )
+jobs.db
+
+
 # Python junk
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
+
