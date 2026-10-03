@@ -81,3 +81,24 @@ plt.ylabel("Job title")
 plt.tight_layout()
 plt.savefig("chart_top_titles.png")
 plt.show()
+
+import sqlite3
+
+conn = sqlite3.connect("jobs.db")
+top_skills = pd.read_sql("""
+    SELECT skill_name, COUNT(*) AS mentions
+    FROM skills
+    GROUP BY skill_name
+    ORDER BY mentions DESC
+    LIMIT 15
+""", conn)
+conn.close()
+
+plt.figure(figsize=(8, 6))
+sns.barplot(x=top_skills["mentions"], y=top_skills["skill_name"], color="indianred")
+plt.title("Top 15 In-Demand Skills (AI-Extracted from Job Descriptions)")
+plt.xlabel("Number of postings mentioning this skill")
+plt.ylabel("Skill")
+plt.tight_layout()
+plt.savefig("chart_top_skills.png")
+plt.show()

@@ -6,15 +6,19 @@ import time
 from config import LLM_API_KEY
 
 DB_PATH = "jobs.db"
-MODEL = "gemini-2.5-flash-lite"
+MODEL = "gemini-3.5-flash-lite"
 URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent"
 
 
 def build_prompt(description):
     return (
-        "Extract up to 5 technical skills required in this job description. "
-        "Respond ONLY with a JSON array of strings, nothing else. "
-        "Example: [\"Python\", \"SQL\", \"AWS\"]\n\n"
+        "From this job description, extract up to 5 specific technical tools, "
+        "programming languages, software, or platforms mentioned (e.g. Python, SQL, "
+        "Excel, Power BI, Tableau, AWS, Salesforce). "
+        "Do NOT include generic activities like 'data analysis' or 'communication skills' "
+        "- only concrete named tools/technologies. "
+        "If none are mentioned, respond with an empty array []. "
+        "Respond ONLY with a JSON array of strings, nothing else.\n\n"
         f"Job description:\n{description}"
     )
 
@@ -64,18 +68,18 @@ def extract_skills(description, retries=3):
 def main():
     conn = sqlite3.connect(DB_PATH)
 
-    # only process jobs that don't already have skills (safe to re-run)
     jobs = conn.execute("""
         SELECT job_id, description FROM jobs
         WHERE job_id NOT IN (SELECT DISTINCT job_id FROM skills)
-    """).fetchall()[:5]
+    """).fetchall()
 
     print(f"Jobs needing skill extraction: {len(jobs)}")
 
     for i, (job_id, description) in enumerate(jobs, start=1):
         print(f"[{i}/{len(jobs)}] {job_id}")
         skills = extract_skills(description)
-
+        print(f"  Extracted: {skills}")
+        print(f"  Full description: {description}")
         for skill in skills:
             conn.execute(
                 "INSERT OR IGNORE INTO skills (job_id, skill_name) VALUES (?, ?)",
@@ -83,7 +87,7 @@ def main():
             )
         conn.commit()
 
-        time.sleep(10)  # be polite to the free tier rate limit
+        time.sleep(10)
 
     conn.close()
     print("Done.")
